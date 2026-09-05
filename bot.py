@@ -16,12 +16,16 @@ c.execute('''CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY, qual
 conn.commit()
 
 app = Flask(__name__)
+
 @app.route('/')
 def home():
     return "Bot is Running!"
+
 def run_web():
     app.run(host="0.0.0.0", port=int(os.environ.get('PORT', 8080)))
-    threading.Thread(target=run_web).start()
+
+# این خط بیرون از تابع قرار دارد تا سرور بدون مشکل در پس‌زمینه روشن بماند
+threading.Thread(target=run_web).start()
 
 video_tasks = {}
 
@@ -103,7 +107,7 @@ def process_download(chat_id, user_id):
         'download_ranges': yt_dlp.utils.download_range_func(None, [(task['start'], task['end'])]),
         'force_keyframes_at_cuts': True,
         'outtmpl': f'video_{user_id}.%(ext)s',
-        'extractor_args': {'youtube': {'player_client': ['android']}}, # دور زدن مسدودسازی یوتیوب روی هاست ابری
+        'extractor_args': {'youtube': {'player_client': ['android']}},
         'quiet': True
     }
 
