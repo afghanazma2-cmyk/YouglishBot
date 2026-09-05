@@ -24,7 +24,6 @@ def home():
 def run_web():
     app.run(host="0.0.0.0", port=int(os.environ.get('PORT', 8080)))
 
-# این خط بیرون از تابع قرار دارد تا سرور بدون مشکل در پس‌زمینه روشن بماند
 threading.Thread(target=run_web).start()
 
 video_tasks = {}
@@ -107,7 +106,7 @@ def process_download(chat_id, user_id):
         'download_ranges': yt_dlp.utils.download_range_func(None, [(task['start'], task['end'])]),
         'force_keyframes_at_cuts': True,
         'outtmpl': f'video_{user_id}.%(ext)s',
-        'extractor_args': {'youtube': {'player_client': ['android']}},
+        'extractor_args': {'youtube': {'player_client': ['ios']}}, # استفاده از کلاینت آی‌اواس برای دور زدن خطای ربات
         'quiet': True
     }
 
