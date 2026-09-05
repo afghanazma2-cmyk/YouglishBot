@@ -32,14 +32,13 @@ def start_cmd(message):
 @bot.message_handler(regexp=r"(youtu\.be|youtube\.com)")
 def handle_url(message):
     raw_url = message.text
-    # پاکسازی لینک از پارامترهای اضافی مثل si
     clean_url = raw_url.split('&')[0].split('?si=')[0]
     
     match = re.search(r"[?&](t|start)=(\d+)", raw_url)
     if match:
         base_time = int(match.group(2))
     else:
-        base_time = 15  # اگر لینک زمان نداشت، پیش‌فرض روی ۱۵ ثانیه می‌رود تا دکمه‌های منفی کار کنند
+        base_time = 15  
     
     video_tasks[message.from_user.id] = {
         'url': clean_url,
@@ -100,10 +99,11 @@ def process_download(chat_id, user_id):
     task = video_tasks.get(user_id)
 
     ydl_opts = {
-        'format': 'best[height<=480]/best', # انتخاب کیفیت مناسب برای سرور رایگان
+        'format': 'best[height<=480]/best',
         'download_ranges': yt_dlp.utils.download_range_func(None, [(task['start'], task['end'])]),
         'force_keyframes_at_cuts': True,
         'outtmpl': f'video_{user_id}.%(ext)s',
+        'extractor_args': {'youtube': {'player_client': ['android']}}, # دور زدن مسدودسازی یوتیوب روی هاست ابری
         'quiet': True
     }
 
