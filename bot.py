@@ -21,7 +21,7 @@ def home():
     return "Bot is Running!"
 def run_web():
     app.run(host="0.0.0.0", port=int(os.environ.get('PORT', 8080)))
-threading.Thread(target=run_web).start()
+    threading.Thread(target=run_web).start()
 
 video_tasks = {}
 
@@ -31,12 +31,18 @@ def start_cmd(message):
 
 @bot.message_handler(regexp=r"(youtu\.be|youtube\.com)")
 def handle_url(message):
-    url = message.text
-    match = re.search(r"[?&](t|start)=(\d+)", url)
-    base_time = int(match.group(2)) if match else 0
+    raw_url = message.text
+    # پاکسازی لینک از پارامترهای اضافی مثل si
+    clean_url = raw_url.split('&')[0].split('?si=')[0]
+    
+    match = re.search(r"[?&](t|start)=(\d+)", raw_url)
+    if match:
+        base_time = int(match.group(2))
+    else:
+        base_time = 15  # اگر لینک زمان نداشت، پیش‌فرض روی ۱۵ ثانیه می‌رود تا دکمه‌های منفی کار کنند
     
     video_tasks[message.from_user.id] = {
-        'url': url,
+        'url': clean_url,
         'base_time': base_time,
         'start': max(0, base_time - 5),
         'end': base_time + 10
@@ -45,7 +51,7 @@ def handle_url(message):
 
 def send_edit_menu(chat_id, user_id):
     task = video_tasks.get(user_id)
-    text = f"⏱ زمان پایه: {task['base_time']}\n\n🟢 شروع: {task['start']} | 🔴 پایان: {task['end']}"
+    text = f"⏱ زمان پایه: {task['base_time']} ثانیه\n\n🟢 شروع: {task['start']} | 🔴 پایان: {task['end']}"
     bot.send_message(chat_id, text, reply_markup=get_markup())
 
 def get_markup():
@@ -85,17 +91,20 @@ def process_video_callback(call):
 
 def update_menu(call):
     task = video_tasks.get(call.from_user.id)
-    bot.edit_message_text(f"⏱ زمان پایه: {task['base_time']}\n\n🟢 شروع: {task['start']} | 🔴 پایان: {task['end']}", call.message.chat.id, call.message.message_id, reply_markup=get_markup())
+    try:
+        bot.edit_message_text(f"⏱ زمان پایه: {task['base_time']} ثانیه\n\n🟢 شروع: {task['start']} | 🔴 پایان: {task['end']}", call.message.chat.id, call.message.message_id, reply_markup=get_markup())
+    except Exception:
+        pass
 
 def process_download(chat_id, user_id):
     task = video_tasks.get(user_id)
 
     ydl_opts = {
-        'format': 'best', # انتخاب سبک‌ترین فرمت برای جلوگیری از فشار به رم سرور
+        'format': 'best[height<=480]/best', # انتخاب کیفیت مناسب برای سرور رایگان
         'download_ranges': yt_dlp.utils.download_range_func(None, [(task['start'], task['end'])]),
         'force_keyframes_at_cuts': True,
         'outtmpl': f'video_{user_id}.%(ext)s',
-        'quiet': False
+        'quiet': True
     }
 
     try:
